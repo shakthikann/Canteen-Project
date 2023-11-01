@@ -10,9 +10,6 @@ const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const Order = require("./order");
 const app = express();
 
-const http = require("http");
-const server = http.createServer(app);
-const io = require("socket.io")(server);
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + "/public"));
 
@@ -79,6 +76,15 @@ passport.use(
     }
   )
 );
+
+function generateRandomId(length = 4) {
+  const characters = "0123456789";
+  let result = "";
+  for (let i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+  return result;
+}
 // Define your routes
 
 // Initialize Google OAuth authentication
@@ -117,19 +123,17 @@ app.post("/order", async (req, res) => {
     const username = req.user.username;
     const item = req.body.itemName;
 
+    const orderid = generateRandomId();
+
     // Parse the form data to get the ordered items (as shown in previous responses)
     console.log(req.user);
-    console.log(item);
-
     const newOrder = await Order.create({
+      orderid: orderid,
       username: username,
       item: item,
     });
 
     await newOrder.save();
-
-    // Emit a Socket.io event to notify the admin page of the new order
-    io.emit("newOrder", newOrder);
 
     res.redirect("/home");
   }
